@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Servicio de la aplicación Laravel
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel-app
+    ports:
+      - "80:80"        # Apache (Laravel)
+      - "5173:5173"    # Vite (Frontend)
+    volumes:
+      - .:/var/www/html   # Monta tu código fuente en el contenedor
+      - ./public:/var/www/html/public  # Monta la carpeta public
+    networks:
+      - laravel-net
+    depends_on:
+      - mongo
+    environment:
+      - DB_CONNECTION=mongodb
+      - DB_HOST=mongo
+      - DB_PORT=27017
+      - DB_DATABASE=manuelitoscarnes
+      - DB_USERNAME=adminmc
+      - DB_PASSWORD=password123
+      - DB_URI=mongodb://adminmc:password123@mongo:27017/manuelitoscarnes
+    working_dir: /var/www/html  # Asegúrate de estar en el directorio correcto de Laravel
+    command: ["sh", "-c", "npm run dev & apache2-foreground"]  # Ejecuta Vite y Apache simultáneamente
+
+  # Servicio de MongoDB
+  mongo:
+    image: mongo:latest
+    container_name: mongo-db
+    ports:
+      - "27017:27017"    # MongoDB
+    networks:
+      - laravel-net
+    volumes:
+      - mongo-data:/data/db  # Persistir los datos de MongoDB
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=adminmc
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=manuelitoscarnes
+    command: ["mongod", "--auth"]  # Asegura la autenticación de MongoDB
+
+# Definimos una red para ambos servicios
+networks:
+  laravel-net:
+    driver: bridge
+
+# Volumen para persistir los datos de MongoDB
+volumes:
+  mongo-data:
